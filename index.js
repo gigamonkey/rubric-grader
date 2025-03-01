@@ -1,19 +1,26 @@
+#!/usr/bin/env node
+
 import YAML from 'yaml';
 import express from 'express';
 import fs from 'fs/promises';
 import nunjucks from 'nunjucks';
 import path from 'path';
 import { DB } from './db.js';
+import { argv } from 'process';
 import { fileURLToPath } from 'url';
 import { glob } from 'glob';
 import { tsv } from './express-tsv.js';
 
 const mod = (a, b) => ((a % b) + b) % b
 
-const db = new DB('db.db');
-const port = 3000;
+const dir = argv[2];
+
+console.log(`Grading directory ${dir}`);
+
+const db = new DB(path.join(dir, 'db.db'));
+const port = 3001;
 const app = express();
-const assignment = YAML.parse(await fs.readFile('assignment.yml', 'utf8'));
+const assignment = YAML.parse(await fs.readFile(path.join(dir, 'assignment.yml'), 'utf8'));
 
 app.set('json spaces', 2);
 app.use(express.json());
@@ -52,7 +59,6 @@ app.get('/a/submission/:sha', (req, res) => {
 app.put('/a/scores/:sha', (req, res) => {
   const { sha } = req.params;
   const { question, criteria, correct } = req.body;
-  console.log(`Saving score for ${JSON.stringify({sha, question, criteria, correct })}`);
   if (correct) {
     db.updateScore({sha, question, criteria, correct });
   } else {

@@ -1,3 +1,2 @@
-answers
 node_modules
-db.db*
+*.db*
