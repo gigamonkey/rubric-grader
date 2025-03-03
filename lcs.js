@@ -34,7 +34,7 @@ const lcsReconstruct = (matrix, a, b) => {
       result.push(a[i])
       i++;
       j++;
-    } else if (down === her) {
+    } else if (down === here) {
       j++;
     } else if (right === here) {
       i++;
