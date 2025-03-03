@@ -9,6 +9,7 @@ import { DB } from './db.js';
 import { argv } from 'process';
 import { fileURLToPath } from 'url';
 import { glob } from 'glob';
+import { reloadRubric } from './data.js'
 import { tsv } from './express-tsv.js';
 
 const mod = (a, b) => ((a % b) + b) % b
@@ -18,13 +19,17 @@ const dir = argv[2];
 console.log(`Grading directory ${dir}`);
 
 const db = new DB(path.join(dir, 'db.db'));
+const rubricFile = path.join(dir, 'rubric.yml')
+const assignment = YAML.parse(await fs.readFile(path.join(dir, 'assignment.yml'), 'utf8'));
+
 const port = 3001;
 const app = express();
-const assignment = YAML.parse(await fs.readFile(path.join(dir, 'assignment.yml'), 'utf8'));
+
+reloadRubric(db, rubricFile);
 
 app.set('json spaces', 2);
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(import.meta.dirname, 'public')));
 app.use(tsv);
 
 const env = nunjucks.configure('views', {

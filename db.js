@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import { fps } from './public/js/scoring.js';
+import { similarity } from './lcs.js';
 
 const run =
   (stmt) =>
@@ -178,12 +179,30 @@ const sql = {
 
   gradeStats: {
     action: get,
-    sql: `select
+    sql: `with per_question as (
+            select
+              sha,
+              question,
+              sum(case when correct = 'yes' then weight else 0 end) / (1.0 * sum(weight)) question_score
+            from submissions, rubric
+            left join scores using (sha, question, criteria)
+            group by sha, question
+         ),
+         percent_done as (
+           select
+             sha,
+             sum(case when correct is not null then 1.0 else 0.0 end) / count(*) done
+           from submissions, rubric
+           left join scores using (sha, question, criteria)
+           group by sha
+         )
+         select
             sha,
-            sum(case when correct is not null then 1.0 else 0.0 end) / count(sha) done,
-            sum(case when correct = 'yes' then weight else 0 end) / (1.0 * sum(weight)) grade
+            coalesce(done, 0) done,
+            coalesce(sum(question_score) / count(*), 0) grade
           from submissions, rubric
-          left join scores using (sha, question, criteria)
+          left join per_question using (sha)
+          left join percent_done using (sha)
           where sha = $sha`,
   },
 
@@ -197,6 +216,17 @@ const sql = {
           join rubric r
           left join scores using (sha, question, criteria)
           group by sha`,
+  },
+
+  answerSimilarity: {
+    action: run,
+    sql: `create table answer_similarity as select
+            a1.sha submission1,
+            a2.sha submission2,
+            a1.question question,
+            similarity(a1.answer, a2.answer) similarity
+          from answers a1
+          join answers a2 on a1.question = a2.question and a1.sha <> a2.sha`,
   },
 
   work: {
@@ -228,13 +258,18 @@ const sql = {
 
 };
 
+const sim = (a, b) => {
+  const pat = /\s+/g;
+  return similarity(a.replaceAll(pat, ' '), b.replaceAll(pat, ' ')).aToB;
+};
 
 class DB {
   constructor(filename, schema) {
     this.db = new Database(filename, {});
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
-    this.db.function('fps', fps)
+    this.db.function('fps', fps);
+    this.db.function('similarity', sim);
     if (schema) {
       this.db.exec(fs.readFileSync(schema, 'utf8'));
     }
