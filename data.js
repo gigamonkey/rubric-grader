@@ -22,6 +22,7 @@ const loadRubric = (db, rubricFile) => {
       db.insertRubricItem({question, criteria, sequence, weight});
     });
   });
+  db.scoreMissing();
 };
 
 /*
