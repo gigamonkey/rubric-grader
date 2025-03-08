@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 import nunjucks from 'nunjucks';
 import path from 'path';
 import { DB } from './db.js';
-import { argv } from 'process';
+import process from 'process';
 import { fileURLToPath } from 'url';
 import { glob } from 'glob';
 import { reloadRubric } from './data.js'
@@ -14,7 +14,7 @@ import { tsv } from './express-tsv.js';
 
 const mod = (a, b) => ((a % b) + b) % b
 
-const dir = argv[2];
+const dir = process.argv[2];
 
 console.log(`Grading directory ${dir}`);
 
@@ -22,7 +22,7 @@ const db = new DB(path.join(dir, 'db.db'));
 const rubricFile = path.join(dir, 'rubric.yml')
 const assignment = YAML.parse(await fs.readFile(path.join(dir, 'assignment.yml'), 'utf8'));
 
-const port = 3001;
+const port = process.env.HTTP_PORT ?? 3001;
 const app = express();
 
 reloadRubric(db, rubricFile);
