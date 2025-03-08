@@ -11,9 +11,11 @@ const { entries, keys } = Object;
 const fileText = (f) => fs.readFileSync(f,  { encoding: 'utf8' });
 
 /*
- * Load the rubric from a YAML file.
+ * Load the rubric from a YAML file. Wipes out existing entries.
  */
 const loadRubric = (db, rubricFile) => {
+  db.clearQuestions();
+  db.clearRubric();
   entries(parseRubric(rubricFile)).forEach(([question, items], sequence) => {
     db.insertQuestion({sequence, question});
     entries(items).forEach(([criteria, weight], sequence) => {
@@ -23,17 +25,8 @@ const loadRubric = (db, rubricFile) => {
 };
 
 /*
- * Reload the rubric from a YAML file.
- */
-const reloadRubric = (db, rubricFile) => {
-  console.log(`Reloading rubric from ${rubricFile}`);
-  db.clearQuestions();
-  db.clearRubric();
-  loadRubric(db, rubricFile);
-};
-
-/*
- * Load answers from completions.tsv and answer files.
+ * Load answers from completions.tsv and answer files. The completions file
+ * determines what we load; the answer files just provide the data.
  */
 const loadSubmissions = (db, answersDir, rubricFile) => {
   const completionsFile = path.join(answersDir, "completions.tsv")
@@ -78,4 +71,4 @@ const parseAnswers = (f) => {
   return JSON.parse(fileText(f)).map(a => a?.trim() ?? "");
 }
 
-export { loadRubric, loadSubmissions, reloadRubric, parseRubric, dumpRubric };
+export { loadRubric, loadSubmissions, parseRubric, dumpRubric };

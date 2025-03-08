@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import path from 'path';
-import { DB } from './db.js';
+import { openDB } from './db.js';
 import { argv } from 'process';
 import { loadRubric, loadSubmissions } from './data.js';
 
@@ -14,7 +14,8 @@ const gradingDir = argv[2];
 // answers into a single database for grading.
 const answersDir = argv[3]
 
-const db = new DB(path.join(gradingDir, 'db.db'), path.join(here, 'schema.sql'));
+const db = openDB(path.join(gradingDir, 'db.db'), path.join(here, 'schema.sql'));
 const rubricFile = path.join(gradingDir, 'rubric.yml');
 
+loadRubric(db, rubricFile);
 loadSubmissions(db, answersDir, rubricFile)

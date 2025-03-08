@@ -4,12 +4,14 @@ import YAML from 'yaml';
 import express from 'express';
 import fs from 'fs/promises';
 import nunjucks from 'nunjucks';
+import os from 'os';
 import path from 'path';
 import process from 'process';
+import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import { glob } from 'glob';
 import { openDB } from './db.js';
-import { reloadRubric } from './data.js'
+import { loadRubric } from './data.js'
 import { tsv } from './express-tsv.js';
 
 const mod = (a, b) => ((a % b) + b) % b
@@ -22,10 +24,25 @@ const db = openDB(path.join(dir, 'db.db'));
 const rubricFile = path.join(dir, 'rubric.yml')
 const assignment = YAML.parse(await fs.readFile(path.join(dir, 'assignment.yml'), 'utf8'));
 
-const port = process.env.HTTP_PORT ?? 3001;
+const port = process.env.HTTP_PORT ?? 0;
 const app = express();
 
-reloadRubric(db, rubricFile);
+const openUrl = (url) => {
+  const platform = os.platform();
+
+  const command = (
+    platform === 'win32' ? `start ${url}` :
+    platform === 'darwin' ? `open ${url}` :
+    `xdg-open ${url}`
+  );
+
+  exec(command, (error) => {
+    if (error) {
+      console.error(`Failed to open URL: ${error}`);
+      return;
+    }
+  });
+};
 
 app.set('json spaces', 2);
 app.use(express.json());
@@ -38,10 +55,11 @@ const env = nunjucks.configure('views', {
 });
 
 /*
- * Latest submissions.
+ * Latest submissions, one per github handle. Also we reload the rubric each
+ * time so we can edit the yaml file and refresh without restarting the server.
  */
 app.get('/a/submissions', (req, res) => {
-  //res.json(db.allSubmissions());
+  loadRubric(db, rubricFile);
   res.json(db.latestSubmissions());
 });
 
@@ -112,5 +130,7 @@ app.get('/work', (req, res) => {
 });
 
 app.listen(port, function () {
-  console.log(`http://localhost:${this.address().port}`);
+  const url = `http://localhost:${this.address().port}`;
+  console.log(`Opening ${url}`);
+  openUrl(url);
 })
