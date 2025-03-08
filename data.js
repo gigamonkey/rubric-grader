@@ -4,7 +4,6 @@ import YAML from 'yaml';
 import fs from 'fs';
 import path from 'path';
 import { glob } from 'glob';
-import { DB } from './db.js';
 import { argv } from 'process';
 
 const { entries, keys } = Object;

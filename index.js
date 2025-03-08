@@ -5,10 +5,10 @@ import express from 'express';
 import fs from 'fs/promises';
 import nunjucks from 'nunjucks';
 import path from 'path';
-import { DB } from './db.js';
 import process from 'process';
 import { fileURLToPath } from 'url';
 import { glob } from 'glob';
+import { openDB } from './db.js';
 import { reloadRubric } from './data.js'
 import { tsv } from './express-tsv.js';
 
@@ -18,7 +18,7 @@ const dir = process.argv[2];
 
 console.log(`Grading directory ${dir}`);
 
-const db = new DB(path.join(dir, 'db.db'));
+const db = openDB(path.join(dir, 'db.db'));
 const rubricFile = path.join(dir, 'rubric.yml')
 const assignment = YAML.parse(await fs.readFile(path.join(dir, 'assignment.yml'), 'utf8'));
 
@@ -38,9 +38,17 @@ const env = nunjucks.configure('views', {
 });
 
 /*
- * All submissions.
+ * Latest submissions.
  */
 app.get('/a/submissions', (req, res) => {
+  //res.json(db.allSubmissions());
+  res.json(db.latestSubmissions());
+});
+
+/*
+ * All submissions (multiple per student)
+ */
+app.get('/a/all-submissions', (req, res) => {
   res.json(db.allSubmissions());
 });
 

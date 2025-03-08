@@ -8,6 +8,9 @@ all: db.db
 db.db: schema.sql load-data.js
 	node load-data.js
 
+pugly.sql: schema.sql
+	npx puglify $< > $@
+
 pretty:
 	prettier -w **/*.js *.sql public/**/*.css
 
