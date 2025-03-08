@@ -1,11 +1,39 @@
+/*
+ * Return the LCS of two strings.
+ */
 const lcs = (a, b) => {
   return lcsReconstruct(lcsMatrix(a, b), a, b);
 };
 
+/*
+ * Return the length of the LCS of two strings. Slightly cheaper than actually
+ * constructing the LCS.
+ */
 const lcsLength = (a, b) => {
   return lcsMatrix(a, b)[0][0];
 };
 
+/*
+ * Compute the similarity of two strings, a and b, returning an object with four
+ * properties: aToB (percent of a that's in the LCS), bToA (percent of b that's
+ * in the LCS), total (the percent of the average length of a and b that's in
+ * the LCS), and edit (the edit distance using only inserts and deletes between
+ * a and b).
+  */
+const similarity = (a, b) => {
+  const shared = lcsLength(a, b);
+  return {
+    aToB: shared / a.length,
+    bToA: shared / b.length,
+    total: shared / ((a.length + b.length) / 2),
+    edit: 2 * shared - (a.length + b.length),
+  };
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Internals
+
+// Compute the matrix using dynamic programming.
 const lcsMatrix = (a, b) => {
   const matrix = Array.from({ length: b.length + 1 }, () => Array(a.length + 1).fill(0));
 
@@ -19,7 +47,7 @@ const lcsMatrix = (a, b) => {
   return matrix;
 };
 
-
+// Reconstruct the LCS from the matrix.
 const lcsReconstruct = (matrix, a, b) => {
   const result = []
 
@@ -44,7 +72,7 @@ const lcsReconstruct = (matrix, a, b) => {
   return result.join('');
 };
 
-
+//
 const neighbors = (m, i, j) => {
   return {
     here: m[j][i],
@@ -54,15 +82,6 @@ const neighbors = (m, i, j) => {
   };
 };
 
-const similarity = (a, b) => {
-  const shared = lcsLength(a, b);
-  return {
-    aToB: shared / a.length,
-    bToA: shared / b.length,
-    total: shared / ((a.length + b.length) / 2),
-    edit: 2 * shared - (a.length + b.length),
-  };
-};
 
 
 export { lcs, similarity }
