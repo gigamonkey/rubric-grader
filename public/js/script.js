@@ -29,11 +29,11 @@ const fillProgress = (submissions) => {
 const show = async (which) => {
   window.location.hash = `#${which}`;
 
-  const sha = submissions[which - 1].sha;
+  const { sha, github } = submissions[which - 1];
 
   const current = await fetch(`/a/submission/${sha}`).then(r => r.json());
 
-  updateSummary(current.stats, sha);
+  updateSummary(current.stats, sha, current.github);
   $$('#progress span.current').forEach(e => e.classList.remove('current'));
   circles[sha].classList.add('current');
 
@@ -41,8 +41,12 @@ const show = async (which) => {
   fillAnswers(current);
 };
 
-const updateSummary = (stats, sha) => {
-  doc.score.innerText = scoreString(stats) + `; sha: ${sha.slice(0, 7)}`;
+const updateSummary = (stats, sha, github) => {
+  if (allGraded()) {
+    doc.score.innerText = scoreString(stats) + `; ${github}; sha: ${sha.slice(0, 7)}`;
+  } else {
+    doc.score.innerHTML = scoreString(stats) + `; <span id="github">${github}</span>; sha: ${sha.slice(0, 7)}`;
+  }
 };
 
 const showNext = () => {
@@ -84,7 +88,7 @@ const fillAnswers = (current) => {
           yesButton.classList.add('selected');
           noButton.classList.remove('selected');
         }
-        saveScore(current.sha, q, k, current.scores[q][k]);
+        saveScore(current, q, k, current.scores[q][k]);
       }
 
       noButton.onclick = () => {
@@ -96,7 +100,7 @@ const fillAnswers = (current) => {
           noButton.classList.add('selected');
           yesButton.classList.remove('selected');
         }
-        saveScore(current.sha, q, k, current.scores[q][k]);
+        saveScore(current, q, k, current.scores[q][k]);
       }
 
       label.querySelector('.description').append(k);
@@ -122,13 +126,14 @@ const scoreString = (score) => {
   return `Score: ${(100 * score.grade).toFixed(1)}; Grade: ${fps(score.grade)}; Done: ${done}`;
 };
 
-const saveScore = async (sha, question, criteria, correct) => {
+const saveScore = async (submission, question, criteria, correct) => {
+  const {sha, github } = submission;
   const stats = await fetch(`/a/scores/${sha}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({question, criteria, correct }),
   }).then(r => r.json());
-  updateSummary(stats, sha);
+  updateSummary(stats, sha, github);
   if (stats.done === 1.0) {
     circles[sha].classList.add('done');
   } else {
@@ -143,6 +148,8 @@ const saveComment = async (sha, question, comment) => {
     body: JSON.stringify({question, comment }),
   });
 };
+
+const allGraded = () => submissions.every(s => s.done === 1.0);
 
 const submissions = await fetch('/a/submissions/').then(r => r.json());
 const num = submissions.length;

@@ -115,3 +115,13 @@ button.no.selected {
 #score {
   text-align: right;
 }
+
+#github {
+  color: grey;
+  background: grey;
+  padding: 2px 6px;
+}
+
+#github:hover {
+  color: white;
+}
